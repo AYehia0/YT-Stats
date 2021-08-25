@@ -53,3 +53,11 @@ td, th {
 tr:nth-child(even) {
   background-color: #dddddd;
 }
+
+#download-all {
+    width: fit-content;
+    margin: auto;
+    margin-top: 20px;
+    font-size: 1.4rem;
+    cursor: pointer;
+}
