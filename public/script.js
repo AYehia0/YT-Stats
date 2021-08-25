@@ -96,7 +96,13 @@ async function getLatestVideos(upId, vidCount){
 function getVideoIds(videos){
     const videoIds = []
     videos.forEach(vid => {
-        videoIds.push(vid.contentDetails.videoId)
+        try {
+            const id = vid.contentDetails.videoId
+            videoIds.push(id)
+        }catch (error){
+            const id = vid.id.videoId
+            videoIds.push(id)
+        }
     })
     return videoIds
 }
@@ -105,6 +111,7 @@ function getVideoIds(videos){
 async function getVideosInfo(videos){
     const ids = getVideoIds(videos).join(',')
 
+    console.log("ids are : " , ids)
     // here
     const getReqTemp = `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet,contentDetails&id=${ids}&order=viewCount&key=${keys.apiKey}`
 
@@ -131,7 +138,7 @@ function getLastVideoWithInfo(videosDict){
 async function getMostWatched(chId, vidCount){
     // https://www.googleapis.com/youtube/v3/search?part=snippet&channelId={ch_id}&key={key}&maxResults=5&order=viewcount
 
-    const getReqTemp = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${chId}&key=${keys.apiKey}&maxResults=${vidCount}&order=viewcount`
+    const getReqTemp = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${chId}&key=${keys.apiKey}&maxResults=${vidCount}&order=viewcount&type=video`
 
     const response = await fetch(getReqTemp)
     const data = await response.json()
@@ -235,8 +242,17 @@ submitBtn.addEventListener('click', (e) => {
                     // getting top vids
                     const topVids = await getMostWatched(id, rangeValue)
                     
+                    console.log(topVids)
+                    // getting video ids 
+                    const videoDetails = await getVideosInfo(topVids) 
+
+                    console.error(videoDetails)
+                    const viewsTotal = Object.keys(videoDetails).reverse()
+                    
+                    console.error(viewsTotal)
+                    //console.log(videoDetails)
                     // getting data of vids
-                    for await (item of topVids){
+                    for await ( const [ind, item] of topVids.entries()){
                         const vidId = item.id.videoId
                         const publishedTime = item.snippet.publishedAt
                         const title = item.snippet.title
@@ -249,7 +265,7 @@ submitBtn.addEventListener('click', (e) => {
                             time: publishedTime,
                             title: title,
                             channelTitle: chTitle,
-                            views: null
+                            views: viewsTotal[ind]
                             })
                         }
                     // adding to html 
@@ -269,6 +285,7 @@ submitBtn.addEventListener('click', (e) => {
 
                     const searchedVids = await getLatestVideos(upId, rangeValue)
 
+                    console.log(searchedVids)
                     const vidStats = await getVideosInfo(searchedVids) 
 
                     const mostViewedInRange = getLastVideoWithInfo(vidStats)
