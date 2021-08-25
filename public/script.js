@@ -150,16 +150,17 @@ function createTable(vidData, views=false) {
     const resultArea = document.querySelector('.result')
 
     // cleaning the html 
-    //resultArea.innerHTML = ""
+    resultArea.innerHTML = ""
 
     const tableTemp = `        
-        <h2>Channel : <a href="${channelUrl}">${channelTitle}</a><button id="export-btn">Export CSV</button></h2>
+        <h2>Channels</h2>
             <tr>
+                <th>ChannelUrl</th>
+                <th>ChannelName</th>
                 <th>VideoUrl</th>
                 <th>Title</th>
                 <th>UploadTime</th>
                 <th>ViewsCount</th>
-                <th>ChannelUrl</th>
             </tr>
     `
     // creating the table 
@@ -175,7 +176,8 @@ function createTable(vidData, views=false) {
         
         let rowEl = document.createElement('tr')
         const row = `
-            <td>${channelUrls}</td>
+            <td>${channelUrl}</td>
+            <td>${item.channelTitle}</td>
             <td><a href="${fullUrl}">${item.title}</a></td>
             <td>${item.title}</td>
             <td>${item.time}</td>
@@ -225,9 +227,9 @@ submitBtn.addEventListener('click', (e) => {
                 const rangeValue  = document.querySelector("#range").value
 
 
+                const videoData = []
                 for await (id of ids) {
                     // temp to hold id,time and title
-                    const videoData = []
 
                     // getting top vids
                     const topVids = await getMostWatched(id, rangeValue)
@@ -250,7 +252,7 @@ submitBtn.addEventListener('click', (e) => {
                             })
                         }
                     // adding to html 
-                    createTable(videoData)
+                createTable(videoData)
 
                 }
 
@@ -258,6 +260,7 @@ submitBtn.addEventListener('click', (e) => {
                 
                 // get upload ids
                 const uploadIds = []
+                const data = []
                 for await (id of ids){
                     const rangeValue  = document.querySelector("#range").value
                     const upId = await getUploadId(id)
@@ -277,19 +280,20 @@ submitBtn.addEventListener('click', (e) => {
                     const viewsCount = mostViewedInRange.statistics.viewCount
                     const chTitle = mostViewedInRange.snippet.channelTitle
 
-                    const data = [{
+                    data.push({
                         channel : chId,
                         id : vidId,
                         time: time,
                         title: title,
                         channelTitle:chTitle,
                         views: viewsCount
-                    }]
-
-                    // create a table
-                    createTable(data)
+                    })
 
                 }
+                // create a table
+                createTable(data)
+
+
                 
             }
             // exporting 
@@ -305,17 +309,22 @@ submitBtn.addEventListener('click', (e) => {
             })
 
             // adding download all button
-            const downloadAll = document.createElement('button')
-            downloadAll.innerText = "ExportAll"
-            downloadAll.id = "download-all"
-            document.body.appendChild(downloadAll)
+            // checking if exists 
+            if (!document.getElementById('download-all')){
 
-            // adding eventlistener
-            document.getElementById('download-all').addEventListener('click', (e) => {
-                e.preventDefault()
-                download_all_tables()
-            })
-        }
+                const downloadAll = document.createElement('button')
+                downloadAll.innerText = "ExportAll"
+                downloadAll.id = "download-all"
+                document.body.appendChild(downloadAll)
+
+                // adding eventlistener
+                document.getElementById('download-all').addEventListener('click', (e) => {
+                    e.preventDefault()
+                    download_all_tables()
+                })
+    
+            }
+       }
         fileHandler.readAsText(file)
 
     }
