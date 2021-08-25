@@ -2,7 +2,7 @@
 const inputText = document.getElementById('textFile')
 const submitBtn = document.getElementById('submit-btn')
 
-console.log(keys)
+//console.log(keys)
 
 function getYoutubeLinks(text){
     
@@ -238,17 +238,15 @@ submitBtn.addEventListener('click', (e) => {
                         const chId = item.snippet.channelId
                         const chTitle = item.snippet.channelTitle
 
-                        videoData.push(
-                            {
-                                id: vidId,
-                                channel: chId,
-                                time: publishedTime,
-                                title: title,
-                                channelTitle: chTitle,
-                                views: null
-                            }
-                        )
-                    }
+                        videoData.push({
+                            id: vidId,
+                            channel: chId,
+                            time: publishedTime,
+                            title: title,
+                            channelTitle: chTitle,
+                            views: null
+                            })
+                        }
                     // adding to html 
                     createTable(videoData)
 
@@ -303,11 +301,78 @@ submitBtn.addEventListener('click', (e) => {
                     download_table_as_csv(tableId)
                 })
             })
+
+            // adding download all button
+            const downloadAll = document.createElement('button')
+            downloadAll.innerText = "ExportAll"
+            downloadAll.id = "download-all"
+            document.body.appendChild(downloadAll)
+
+            // adding eventlistener
+            document.getElementById('download-all').addEventListener('click', (e) => {
+                e.preventDefault()
+                download_all_tables()
+            })
         }
         fileHandler.readAsText(file)
 
     }
 })
+
+// download all 
+function download_all_tables(separator = ',') {
+
+    // Select rows from table_id
+    var rows = document.querySelectorAll('tr');
+
+    // Construct csv
+	// adding the headersvar 
+	var csv = [];
+	var firstHeaders = document.querySelector('tr').getElementsByTagName('th')
+	var firstRow = []
+    for (var i=0; i<firstHeaders.length; i++){
+        var data1 = firstHeaders[i].innerText
+		firstRow.push('"' + data1 + '"');
+    }
+
+	csv.push(firstRow.join(separator))
+    for (var i = 0; i < rows.length; i++) {
+        var row = [], cols = rows[i].querySelectorAll('td');
+        for (var j = 0; j < cols.length; j++) {
+            
+            var data = ""
+			if (cols[j].firstElementChild){
+                data = cols[j].firstElementChild.href
+            }else{
+               var data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, '').replace(/(\s\s)/gm, ' ') 
+            }
+
+            data = data.replace(/"/g, '""');
+			row.push('"' + data + '"');
+            
+        }
+		if (row){
+            csv.push(row.join(separator));
+        }
+        
+    }
+	csv = csv.filter(e => e)
+    var csv_string = csv.join('\n');
+    // Download it
+    var filename = 'export' + '_' + new Date().toLocaleDateString() + '.csv';
+    var link = document.createElement('a');
+
+    link.style.display = 'none';
+    link.setAttribute('target', '_blank');
+    link.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv_string));
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    link.addEventListener('click', e => {
+        e.preventDefault()
+    })
+    document.body.removeChild(link);
+}
 
 // Thank you stackoverflow :D
 function download_table_as_csv(table_id, separator = ',') {
