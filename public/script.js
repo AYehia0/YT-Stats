@@ -159,6 +159,7 @@ function createTable(vidData, views=false) {
                 <th>Title</th>
                 <th>UploadTime</th>
                 <th>ViewsCount</th>
+                <th>ChannelUrl</th>
             </tr>
     `
     // creating the table 
@@ -174,6 +175,7 @@ function createTable(vidData, views=false) {
         
         let rowEl = document.createElement('tr')
         const row = `
+            <td>${channelUrls}</td>
             <td><a href="${fullUrl}">${item.title}</a></td>
             <td>${item.title}</td>
             <td>${item.time}</td>
