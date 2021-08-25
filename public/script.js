@@ -174,9 +174,10 @@ function createTable(vidData, views=false) {
        
         const fullUrl = `https://www.youtube.com/watch?v=${item.id}`
         
+        const channelUrl = `https://www.youtube.com/channel/${item.channel}`
         let rowEl = document.createElement('tr')
         const row = `
-            <td>${channelUrl}</td>
+            <td><a href="${channelUrl}">${item.channelTitle}</a></td>
             <td>${item.channelTitle}</td>
             <td><a href="${fullUrl}">${item.title}</a></td>
             <td>${item.title}</td>
@@ -292,10 +293,7 @@ submitBtn.addEventListener('click', (e) => {
                 }
                 // create a table
                 createTable(data)
-
-
-                
-            }
+              }
             // exporting 
             const exportBtns = document.querySelectorAll('#export-btn')
 
