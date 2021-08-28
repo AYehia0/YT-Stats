@@ -34,64 +34,6 @@ function getChannelNames(urls) {
 
     return chNames
 }
-
-// getting the channel_id 
-async function getChannelIds(names){
-    // GET https://youtube.googleapis.com/youtube/v3/search?part=snippet&q={}&type=channel&key=[YOUR_API_KEY] 
-    // channel id starts with UC
-
-    const ids = []
-    for await (name of names){
-
-        // channel may start with UC
-        if (name.charAt(0) == '.'){
-            ids.push(name.substring(1))
-        }else{
-            const getReqTemp = `https://youtube.googleapis.com/youtube/v3/search?part=id&part=snippet&channelType=any&q=${name}&key=${keys.apiKey}`
-            const id =  await getChannelId(getReqTemp)
-            ids.push(id)
-        }
-    }
-    return ids
-}
-
-//using the api to check 
-
-// https://www.googleapis.com/youtube/v3/search?key={your_key_here}&channelId={channel_id_here}&part=snippet,id&order=date&maxResults=20
-
-async function getChannelId(url){
-
-    const response = await fetch(url)
-    const data = await response.json()
-    const id = data.items[0].snippet.channelId
-    return id
-}
-
-
-// getting upload_id 
-async function getUploadId(chId){
-    const getReqTemp = `https://www.googleapis.com/youtube/v3/channels?id=${chId}&key=${keys.apiKey}&part=contentDetails`
-
-    const response = await fetch(getReqTemp)
-    const data = await response.json()
-    const uploadId = data.items[0].contentDetails.relatedPlaylists.uploads
-
-    return uploadId
-
-}
-
-// getting latest N videos : need to search for views and sort manually 
-async function getLatestVideos(upId, vidCount){
-    const getReqTemp = `https://www.googleapis.com/youtube/v3/playlistItems?playlistId=${upId}&key=${keys.apiKey}&part=snippet,contentDetails&maxResults=${vidCount}`
-
-    const response = await fetch(getReqTemp)
-    const data = await response.json()
-    const videos = data.items
-
-    return videos
-
-}
-
 // get a list of video_ids 
 function getVideoIds(videos){
     const videoIds = []
@@ -107,44 +49,25 @@ function getVideoIds(videos){
     return videoIds
 }
 
-// get the videos info by their ids 
-async function getVideosInfo(videos){
-    const ids = getVideoIds(videos).join(',')
-
-    console.log("ids are : " , ids)
-    // here
-    const getReqTemp = `https://www.googleapis.com/youtube/v3/videos?part=statistics,snippet,contentDetails&id=${ids}&order=viewCount&key=${keys.apiKey}`
-
-    const response = await fetch(getReqTemp)
-    const data = await response.json()
-    const details = data.items
-
-    // sort 
-    const sortedDict = {}
-
-    for(var i=0; i<details.length; i++){
-        sortedDict[details[i].statistics.viewCount] = details[i]
-    }
+// make a post request to the server side 
+async function sendToApi(route, data){
     
-   return sortedDict
+    const options = {
+        method: "POST",
+        headers: {
+            'Content-Type': 'application/json'
+            },
+        body: JSON.stringify(data)
+    }
+
+    const res = await fetch(route, options)
+
+    return res
 }
 
 function getLastVideoWithInfo(videosDict){
     const lastVideo = videosDict[Object.keys(videosDict)[Object.keys(videosDict).length - 1]]
     return lastVideo
-}
-
-// return top N videos on the channel 
-async function getMostWatched(chId, vidCount){
-    // https://www.googleapis.com/youtube/v3/search?part=snippet&channelId={ch_id}&key={key}&maxResults=5&order=viewcount
-
-    const getReqTemp = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${chId}&key=${keys.apiKey}&maxResults=${vidCount}&order=viewcount&type=video`
-
-    const response = await fetch(getReqTemp)
-    const data = await response.json()
-    const topVids = data.items
-
-    return topVids
 }
 
 function createTable(vidData, views=false) {
@@ -221,12 +144,17 @@ submitBtn.addEventListener('click', (e) => {
 
             const urls = getYoutubeLinks(output)
             const names = getChannelNames(urls)
-            const ids = await getChannelIds(names)
 
-            console.log(ids)
+            // pass the names to the server side to be processed
+            // post request : https://www.youtube.com/watch?v=Kw5tC5nQMRY
+            const res = await sendToApi('/readChannelNames', names)
+            const data = await res.json()
+
+            // getting the ids
+            const ids = data.data
+
             // selected feature
             const selectedFeature = listFeatures.selectedIndex
-
 
             // Get best video in range N
             if (selectedFeature == 0){
@@ -234,25 +162,23 @@ submitBtn.addEventListener('click', (e) => {
                 // getting the range 
                 const rangeValue  = document.querySelector("#range").value
 
-
                 const videoData = []
-                for await (id of ids) {
+                for(id of ids) {
                     // temp to hold id,time and title
 
                     // getting top vids
-                    const topVids = await getMostWatched(id, rangeValue)
-                    
-                    console.log(topVids)
-                    // getting video ids 
-                    const videoDetails = await getVideosInfo(topVids) 
+                    // calling the server api for that : /getOrderedVids
+                    const res = await sendToApi('/getOrderdVids', [id, rangeValue])
+                    const vidData = await res.json()
 
-                    console.error(videoDetails)
+                    console.log(vidData)
+                    const videoDetails = vidData.videoDetails
+                    const topVids = vidData.topVids
+                    
                     const viewsTotal = Object.keys(videoDetails).reverse()
                     
-                    console.error(viewsTotal)
-                    //console.log(videoDetails)
                     // getting data of vids
-                    for await ( const [ind, item] of topVids.entries()){
+                    for( const [ind, item] of topVids.entries()){
                         const vidId = item.id.videoId
                         const publishedTime = item.snippet.publishedAt
                         const title = item.snippet.title
@@ -278,18 +204,12 @@ submitBtn.addEventListener('click', (e) => {
                 // get upload ids
                 const uploadIds = []
                 const data = []
-                for await (id of ids){
+                for(id of ids){
                     const rangeValue  = document.querySelector("#range").value
-                    const upId = await getUploadId(id)
-                    // getting the vids 
-
-                    const searchedVids = await getLatestVideos(upId, rangeValue)
-
-                    console.log(searchedVids)
-                    const vidStats = await getVideosInfo(searchedVids) 
-
-                    const mostViewedInRange = getLastVideoWithInfo(vidStats)
-
+                    const res = await sendToApi('/getMostWatchedRange', [id, rangeValue])
+                    
+                    const dataApi = await res.json()
+                    const mostViewedInRange = dataApi.mostViewedInRange
                     //getting info
                     const vidId = mostViewedInRange.id
                     const chId = mostViewedInRange.snippet.channelId
