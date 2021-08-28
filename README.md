@@ -15,6 +15,11 @@ To run you have to install [node](https://nodejs.org/en/download/)
   - dotenv: for storing the secret keys as env vars.
   - node-fetch: for calling the api.
 
+## Run 
+
+  - npm run dev 
+
+
 ## ToDo
 
   - [ ] Make the page beautiful :D
